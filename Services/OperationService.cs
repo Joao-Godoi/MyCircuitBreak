@@ -16,7 +16,7 @@ public class OperationService
         ICommand command)
     {
         var randomTime = _randomGenerator.GenerateRandomMilliseconds();
-        Console.WriteLine($"tempo gerado: {randomTime}");
+        Console.WriteLine($"INFO: Tempo gerado: {randomTime}");
         if (circuitBreak.GetState() is ClosedCircuitBreakState || circuitBreak.GetState() is HalfOpenCircuitBreakState)
         {
             var task = Task.Run(() =>
@@ -40,7 +40,6 @@ public class OperationService
         {
             var difference = DateTime.Now - circuitBreak.GetLastFailed();
             var secondsDifference = difference.TotalSeconds;
-            Console.WriteLine($"SEGUNDOS QUE JA PASSOU: {secondsDifference}");
             if (secondsDifference >= 30) circuitBreak.SetNewState(new HalfOpenCircuitBreakState());
             throw new UnavailableServer("Unavailable server, please try again later!");
         }

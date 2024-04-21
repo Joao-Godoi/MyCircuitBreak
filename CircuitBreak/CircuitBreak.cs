@@ -53,19 +53,4 @@ public class CircuitBreak
         _state = state;
         _state.SetCircuitBreak(this);
     }
-
-    public void SetStateToClosed()
-    {
-        _state.SetStateToClosed();
-    }
-
-    public void SetStateToHalfOpen()
-    {
-        _state.SetStateToHalfOpen();
-    }
-
-    public void SetStateToOpen()
-    {
-        _state.SetStateToOpen();
-    }
 }
