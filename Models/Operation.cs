@@ -25,5 +25,5 @@ public class Operation
 
     public double NumB { get; set; }
 
-    public double? Result { get; set; }
+    public double Result { get; set; }
 }

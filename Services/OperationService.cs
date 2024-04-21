@@ -1,3 +1,6 @@
+using CalculatorWithCircuitBreaker.CircuitBreak;
+using CalculatorWithCircuitBreaker.Commands;
+using CalculatorWithCircuitBreaker.Exceptions;
 using CalculatorWithCircuitBreaker.Models;
 using CalculatorWithCircuitBreaker.Records;
 using CalculatorWithCircuitBreaker.Repositories;
@@ -6,21 +9,42 @@ namespace CalculatorWithCircuitBreaker.Services;
 
 public class OperationService
 {
-    private readonly OperationRepository _operationRepository = new();
+    private readonly RandomGenerator _randomGenerator = RandomGenerator.GetInstance();
+    private readonly TimeoutHistoryRepository _timeoutHistoryRepository = new();
 
-    public double? CreateOperation(OperationRecord operationRecord, string operatorType)
+    public double CreateOperation(OperationRecord operationRecord, CircuitBreak.CircuitBreak circuitBreak,
+        ICommand command)
     {
-        var result = operatorType switch
+        var randomTime = _randomGenerator.GenerateRandomMilliseconds();
+        Console.WriteLine($"tempo gerado: {randomTime}");
+        if (circuitBreak.GetState() is ClosedCircuitBreakState || circuitBreak.GetState() is HalfOpenCircuitBreakState)
         {
-            "addition" => operationRecord.NumA + operationRecord.NumB,
-            "subtraction" => operationRecord.NumA - operationRecord.NumB,
-            "division" => operationRecord.NumA / operationRecord.NumB,
-            "multiplication" => operationRecord.NumA * operationRecord.NumB,
-            _ => 0.0
-        };
+            var task = Task.Run(() =>
+            {
+                Thread.Sleep(randomTime);
+                var result = command.Execute(operationRecord);
+                circuitBreak.ResetFailedCount();
+                circuitBreak.SetNewState(new ClosedCircuitBreakState());
+                return result;
+            });
+            if (task.Wait(TimeSpan.FromSeconds(20))) return task.Result;
 
-        var newOperation = new Operation(operatorType, operationRecord.NumA, operationRecord.NumB, result);
-        _operationRepository.CreateOperation(newOperation);
-        return newOperation.Result;
+            circuitBreak.IncrementFailedCount();
+            var newTimeout =
+                new TimeoutModel(randomTime, operationRecord.NumA, operationRecord.NumB, command.GetCommandType());
+            _timeoutHistoryRepository.CreateTimeout(newTimeout);
+            throw new CustomTimeoutException("Timeout, please try again!");
+        }
+
+        if (circuitBreak.GetState() is OpenCircuitBreakState)
+        {
+            var difference = DateTime.Now - circuitBreak.GetLastFailed();
+            var secondsDifference = difference.TotalSeconds;
+            Console.WriteLine($"SEGUNDOS QUE JA PASSOU: {secondsDifference}");
+            if (secondsDifference >= 30) circuitBreak.SetNewState(new HalfOpenCircuitBreakState());
+            throw new UnavailableServer("Unavailable server, please try again later!");
+        }
+
+        return 0.0;
     }
 }

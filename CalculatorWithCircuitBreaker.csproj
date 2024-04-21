@@ -18,4 +18,8 @@
         <Compile Remove="Models\OperatorsType.cs"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <Folder Include="RandomGenerator\"/>
+    </ItemGroup>
+
 </Project>

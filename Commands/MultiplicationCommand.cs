@@ -1,17 +1,16 @@
-using CalculatorWithCircuitBreaker.Models;
 using CalculatorWithCircuitBreaker.Records;
-using CalculatorWithCircuitBreaker.Repositories;
 
 namespace CalculatorWithCircuitBreaker.Commands;
 
 public class MultiplicationCommand : ICommand
 {
-    public double? Execute(OperationRecord operationRecord, CircuitBreak.CircuitBreak circuitBreak)
+    public double Execute(OperationRecord operationRecord)
     {
-        OperationRepository operationRepository = new();
-        var result = operationRecord.NumA * operationRecord.NumB;
-        var newOperation = new Operation("addition", operationRecord.NumA, operationRecord.NumB, result);
-        operationRepository.CreateOperation(newOperation);
-        return newOperation.Result;
+        return operationRecord.NumA * operationRecord.NumB;
+    }
+
+    public string GetCommandType()
+    {
+        return "mult";
     }
 }
